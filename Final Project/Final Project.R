@@ -99,13 +99,14 @@ summary(FullRegression)
 
 plot(FullRegression)
 
+
 # Correlation 
 cor(RegressionData[,unlist(lapply(RegressionData, is.numeric))])
 
  #residual
-residual <- residuals(MultipleRegression)
-influence(MultipleRegression)
-plot(FinalFilmData$gross, residual)
+residual <- residuals(FullRegression)
+influence(FullRegression)
+plot(RegressionData$AdjustedGross, residual)
 residualgls <- residuals(gls)
 residualgls
 residualglm <- residuals(glm)
@@ -116,7 +117,7 @@ qqnorm(residualglm) + qqline(residualglm)
 +qqnorm(residualglmsqr) + qqline(residualglmsqr)
 ggplot(FinalFilmData, aes(gross, residualglm)) + geom_point() + scale_x_contin
 uous(trans = "log1p")
-ggplot(FinalFilmData, aes(title_year, residualglm)) + geom_point() #+ scale_x_continuous(trans = "log1p")
+ggplot(RegressionData, aes(AdjustedGross, residual)) + geom_point() + scale_x_continuous(trans = "log1p")
 #vif
 
 VIF(glm)
