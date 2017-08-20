@@ -1,0 +1,38 @@
+---
+title: 'Delieverable #3'
+author: "Alice Wei"
+date: "August 8, 2017"
+output: html_document
+---
+
+## *Introduction*
+
+
+
+## *Pakages Required*
+
+All packages used in this project was loaded from library Tidyverse.  
+```{r}
+#Basic
+library(tidyverse)
+#Kable
+library(knitr)
+#Kable Formatting
+library(kableExtra)
+```
+
+
+
+
+```{r echo=FALSE}
+#read_rds
+
+
+FinalFilmData <- read_rds("C:/Alice Wei/WFU/MSBA/R/Projects/RProjects/Final Project/FinalFilmData.rds")
+
+kable(head(FinalFilmData,10))
+```
+
+## *Data Preparation*
+
+## *Exploratory Data Analysis*

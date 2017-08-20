@@ -1,0 +1,417 @@
+---
+title: 'Deliverable #3'
+author: "Alice Wei"
+date: "July 26, 2017"
+output: 
+  html_document: 
+    code_folding: hide
+    theme: journal
+    highlight: espresso
+---
+
+```{r}
+
+```
+
+# **Elements that Influece Movie Ratings** {.tabset .tabset-fade .tabset-pills}
+
+<div style="float: center">
+<img src="C:/Alice Wei/WFU/MSBA/R/Projects/Rprojects/Final Project/Movie-making4.jpg" height="100" >
+
+</div>
+## 1. INTRODUCTION 
+
+<div style="float: left">
+<img src="C:/Alice Wei/WFU/MSBA/R/Module 04/A trip to the Moon.jpg" hspace="20" height="120" width="100" >
+
+
+</div>
+
+One of the very famous films in early 1900s, [*A Trip to the Moon*](https://www.youtube.com/watch?v=zXgTFBIwDCc), opens the door of the film industry. Tons of young professionals entered the field with their dreams. From silent films to Dolby Surround Sound movies, from the simplest hand-made visual effect to computer-generated images(CGI), movie has exprienced several revolutions, and now becomes one of the most popular entertainment for people. With the blooming of the industry, the qualities of movies become mixed. Before watching the movie, audience could not really know how good it is. In this projects, I would like to use the data found from [kaggle.com](https://www.kaggle.com/) to illustarte the relationship between the rating score of the movie (the measure of the overal favorableness) and other 10 vairables, including year, box office profits, genre, etc.
+
+By identifying the elements that influence the movie ratings,in other words, the favorableness of a movie, this analysis aims to support audiences to select films that could receive a higher rating score, and also assist them to filter out movies that would receive negtive reviews. In addition, this project is designed to benefit filmmakers, helping them to understand what are the areas that the audience cares about so that they could pay more attention in those areas while producing films.
+
+<br>
+
+
+
+
+
+## 2. PACKAGES 
+
+R packages used in this project include:
+
+* Tidyverse (dpltr, ggplot2)
+* knitr
+* DT
+* stats
+* fmsb
+* nlme
+* VIF
+* plotly
+* base
+* shiny
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(DT)
+library(stats)
+library(fmsb)
+library(nlme)
+library(VIF)
+library(plotly)
+library(base)
+library(shiny)
+
+```
+
+
+
+## 3. DATASETS {.tabset .tabset-fade .tabset-pills}
+
+
+<div style="float: right">
+
+```{r, fig.align='right', echo=FALSE, out.width="150px", out.height="70px"}
+
+knitr::include_graphics("C:/Alice Wei/WFU/MSBA/R/Module 04/imdb.png")
+```
+
+</div>
+
+
+This project utilizes the [**IMDB 5000 Movie Dataset**](https://www.kaggle.com/deepmatrix/imdb-5000-movie-dataset) on [Kaggle](https://www.kaggle.com/). The dataset, in total, contains 5,043 observations and 28 variables. Specifically, data was collected in 2016 from [IMDB](http://www.imdb.com/) website using web scraping. It contains over 5,000 movies in a wide variety of genres from 1916 to 2016.
+
+```{r echo=FALSE, comment=NA,results='asis',null_prefixt=FALSE, warning=FALSE, message=FALSE}
+
+IMDBFilmRaw <- read_csv("C:/Alice Wei/WFU/MSBA/R/Projects/RProjects/Final Project/movie_metadata.csv")
+
+
+```
+<br>
+<br>
+<br>
+<br>
+
+### 3.1 Variables
+
+```{r}
+#Retrieve Data Variables
+Variables <- names(IMDBFilmRaw)
+Variables <- sort(Variables)
+VariableList <- tibble(VarNum = 1:28, VarName = Variables)
+kable(VariableList)
+```
+
+<br>
+
+### 3.2 Raw Dataset
+
+
+```{r comment=NA,results='asis',null_prefixt=TRUE}
+
+kable(head(IMDBFilmRaw, 15),align = 'l')
+
+```
+
+<br>
+
+
+## 4. DATA PREPARATION {.tabset .tabset-fade .tabset-pills}
+
+As shown in previous section, the dataset is not very tidy. Most of the variables are in the same format. To further clean the data and prepare the final data for the regression. I did a few steps below:
+
+1. Select the Variables I need and reorder the variables
+2. Delect all observations that has NA values 
+  * For example, when scraping, some of the factors may be missing on imdb.com so that in the raw dataset, it shows NA.
+3. Seperate genres column. The genres column was formated with several genre stack over each other (divides by "|"). To simply the analysis process, the data was separated by the deliminator "|" and only the very first genre was kept in the final data set
+4. New variable *TotalFacebooklikes* was added to illustrate the total fans a movie has. The Totla Facebook likes is the sum of all likes of director, main actors, and movies
+5. Another new variable *ProfitTurnover* was generated to indicate the return of the budget. if Turnover is greater than 1, then the film has earned some profit.
+6. Add in new variable to catogorize language by English moview and Non-English Movie
+7. Finally, all the summed variable was dropped.
+
+The cleaned dataset has 3871 observations and 11 variables.
+
+```{r warning=FALSE}
+
+#Select and reorder columns
+CleanFilmData <- IMDBFilmRaw[,c(12,26,4,1,24,10,20,21,9,23,5,6,8,25,28)]
+
+#Remove NA, Sepreate Column and get first element, add new variable)
+FinalFilmData <- CleanFilmData %>% 
+  na.omit() %>% 
+  separate(genres, into = c("Genre_1")) %>%
+  mutate(ProfitTurnover = (gross - budget) / budget, 
+         AdjustedGross = gross / 1000000,
+         AdjustedBudget = budget / 1000000,
+         Language = ifelse(language == "English","English","Non-English"), 
+         Country = ifelse(country == "USA", "USA", "Non-US"),
+         TotalFacebooklikes = actor_3_facebook_likes + actor_2_facebook_likes +
+           actor_1_facebook_likes + director_facebook_likes + 
+           movie_facebook_likes,
+         TitleLength = nchar(movie_title),
+         Generation = ifelse(title_year <= 1926, "GI Generation", 
+                             ifelse(title_year <= 1945, 'Mature/ilents',
+                                    ifelse(title_year <= 1964, "Baby Boomers",
+                                           ifelse(title_year <= 1980, "Generation X",
+                                                  ifelse(title_year <= 2000, "Millenium","Boomletes"))))))
+
+# remove summed columns
+FinalFilmData <- FinalFilmData[,-c(7,8,11:15)]
+
+
+```
+
+
+### 4.1 Variables
+
+```{r}
+#Retrieve New Var Names
+FinalVar <- names(FinalFilmData)
+VarType <- lapply(FinalFilmData, typeof)
+FinalVarList <- tibble(Num = 1:16, 
+                       VarName = FinalVar, 
+                       Type = VarType, 
+                       Notes = c('The name of the movie', 'Overall rating Score on imdb.com. Scaled 0 ~ 10',"length of the movie, in minute","The color of the movie. Color or Black and White", "year of the movie", "Genre of the movie","language of the movie. for example, English and French", "box office gross profit, In US dollars", "budget of the movie. In US dollars", "The sum of facebook likes of director, main actors and movie", "(box office gross profit - budget) / budget, indicate the return of each dollar of investment","","","","",""))
+
+kable(FinalVarList)
+```
+
+<br>
+
+### 4.2 Raw Dataset
+
+
+```{r comment=NA,results='asis',null_prefixt=TRUE}
+
+datatable(FinalFilmData)
+
+```
+
+
+
+## 5. METHODOLOGY
+
+In this project, I aim to use several stastical methods to demostrate the relationship. I would like to investigate the distribution of rating score and create histogram to visualize the distribution. Also, I plan to plot box plots and scattered graphs to compare and contrast the data.
+
+To further analyze the relationship and the reliability of the relationship, I would like to run a regression, examing the change of the rating score of a movie when 10 other factors are varied.
+
+* Dependent Variable: **IMDB Rating Score**
+  
+* Independent Variable:
+
+    1. Duration 
+    2. Box Office Profits 
+    3. Genres 
+    4. Budget 
+    5. Title Year 
+    6. Number of Facebook Likes 
+    7. Profit Turnvoer
+   
+## 6. DATA ANALYSIS {.tabset .tabset-fade .tabset-pills}
+
+<br>
+<br>
+ 
+### 6.1 Observations (TOP 10 LISTS)
+
+**6.1.1 Top 10 rating **
+
+Listed below is the Top 10 movies that have the highest rating. Specifically, The Shawshank Redemption, made in 1994 has the highest ranking, although the film itself did not gain a lot of money. The return is 0.134. 
+
+Among all 10 films, we have 4 action films and 4 crime films. Schindler's List is the only one of the 10 films that is in black and white.
+
+```{r}
+
+FinalFilmData %>% 
+  arrange(desc(imdb_score)) %>% 
+  head(10) %>% 
+  kable()
+
+```
+
+**6.1.2 Top 10 Box Office profit**
+
+TBD
+
+```{r}
+
+FinalFilmData %>% 
+  arrange(desc(gross)) %>% 
+  head(10) %>% 
+  kable()
+
+```
+
+**6.1.3 Top 10 Profit Turnover**
+
+TBD
+
+```{r}
+
+FinalFilmData %>% 
+  arrange(desc(ProfitTurnover)) %>% 
+  head(10) %>% 
+  kable()
+
+```
+
+### 6.2 Summary Statistics
+
+**6.2.1 Basic Summary**
+
+The statistical summary was generated to evaluate the overall performance of dataset.
+
+```{r}
+
+# Data Summary
+kable(do.call(cbind, lapply(FinalFilmData[, unlist(lapply(FinalFilmData, is.numeric))], summary)))
+
+
+```
+
+**6.2.2 Distribution**
+
+The distribution of rating score is nearly normal distributed.
+
+
+```{r message=FALSE}
+
+FinalFilmData %>% 
+  ggplot(aes(imdb_score)) + 
+  geom_bar(fill = "#339900") + 
+  ggtitle("Distribution of Rating Score") +
+  theme(plot.title = element_text(hjust = 0.5))+
+  plotly()
+
+```
+
+The distribution of rating score is skewed to the right.
+
+```{r message = FALSE}
+FinalFilmData %>% 
+  ggplot(aes(gross)) + 
+  geom_histogram(fill = "#990066") +
+  ggtitle("Distribution of Gross Box Office Profit") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+```
+
+**6.2.3 Toic: Genre & Language**
+
+TBD
+
+```{r fig.height= 10, fig.width= 12, warning=FALSE}
+
+FinalFilmData %>% 
+  ggplot(aes(Genre_1,imdb_score)) + 
+  geom_boxplot() +
+  ggtitle("Boxplot of Rating Score by Genre") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+FinalFilmData %>% 
+  ggplot(aes(Genre_1, ProfitTurnover, fill = Language)) + 
+  geom_boxplot() + 
+  ylim(0,50) +
+  ggtitle("Boxplot of Profit Turnover by Genre and Language") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+FinalFilmData %>% 
+  ggplot(aes(y=imdb_score, x = Genre_1, categoty = color, fill = color)) +
+  geom_boxplot() +
+  ggtitle("Boxplot of Rating Score by Genre and Color") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+FinalFilmData %>% 
+  ggplot(aes(y=imdb_score, x = Genre_1, categoty = Language, fill = Language)) +
+  geom_boxplot() + 
+  scale_fill_manual(values=c("#0066CC","#339900")) +
+  ggtitle("Boxplot of Rating Score by Genre and Language") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+
+### 6.3 Multiple Linear Regression
+
+**6.3.1 Correlation**
+
+As shown in the table below, most of the factors has correlation in each other.
+
+```{r}
+
+kable(cor(FinalFilmData[,unlist(lapply(FinalFilmData, is.numeric))]))
+
+```
+
+**6.3.2 Significance**
+
+The multiple regression indicates that rating scores a linear relationship to most of the elements tested except profit turnover.
+
+
+```{r}
+
+MultipleRegression <- lm(imdb_score ~ duration + title_year + gross + 
+                           budget + TotalFacebooklikes + ProfitTurnover, 
+                         data = FinalFilmData)
+
+summary(MultipleRegression)
+
+```
+
+**6.3.3 Relationship**
+
+TBD
+
+```{r, message=FALSE, warning=FALSE}
+
+FinalFilmData %>% 
+  ggplot(aes(y = imdb_score, x = gross)) + 
+  geom_point() +
+  geom_smooth(method=lm) +
+  ggtitle("Relationship between gross profit and rating") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+FinalFilmData %>% 
+  ggplot(aes(y = imdb_score, x = title_year)) +                                                                              
+  geom_point()+geom_smooth(method = lm) +
+  ggtitle("Relationship between year an rating") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+FinalFilmData %>% 
+  ggplot(aes(y = imdb_score, x = ProfitTurnover, color = color)) + 
+  geom_point() + 
+  geom_smooth() + 
+  xlim(0,10) +
+  ggtitle("Relationship between profit turover and rating") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+FinalFilmData %>% 
+  ggplot(aes(y = gross, x = budget)) + 
+  geom_point() + 
+  geom_smooth() + 
+  xlim(100000,400000000) +
+  ggtitle("Relationship between gross profit and budget") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+FinalFilmData %>% 
+  ggplot(aes(y = ProfitTurnover, x = budget)) + 
+  geom_point() + 
+  geom_smooth() + 
+  xlim(100000,400000000) +
+  ylim(0,50) +
+  ggtitle("Relationship between Return and budget") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+```
+
+## 7. SUMMARY & CONCLUSION
+
+The txoienegwoieowoe
+
+

@@ -1,0 +1,246 @@
+---
+title: 'Deliverable #3 - Elements that Influence Movie Ratings'
+author: "Alice Wei"
+date: "July 26, 2017"
+output: html_document
+---
+
+
+
+# **Elements that Influece Movie Ratings** {.tabset .tabset-fade .tabset-pills}
+
+<div style="float: center">
+<img src="C:/Alice Wei/WFU/MSBA/R/Projects/Rprojects/Final Project/Movie-making4.jpg" height="100" >
+
+</div>
+## 1. INTRODUCTION 
+
+<div style="float: left">
+<img src="C:/Alice Wei/WFU/MSBA/R/Module 04/A trip to the Moon.jpg" hspace="20" height="120" width="100" >
+
+
+</div>
+
+One of the very famous films in early 1900s, [*A Trip to the Moon*](https://www.youtube.com/watch?v=zXgTFBIwDCc), opens the door of the film industry. Tons of young professionals entered the field with their dreams. From silent films to Dolby Surround Sound movies, from the simplest hand-made visual effect to computer-generated images(CGI), movie has exprienced several revolutions, and now becomes one of the most popular entertainment for people. With the blooming of the industry, the qualities of movies become mixed. Before watching the movie, audience could not really know how good it is. In this projects, I would like to use the data found from [kaggle.com](https://www.kaggle.com/) to illustarte the relationship between the rating score of the movie (the measure of the overal favorableness) and other 10 vairables, including year, box office profits, genre, etc.
+
+By identifying the elements that influence the movie ratings,in other words, the favorableness of a movie, this analysis aims to support audiences to select films that could receive a higher rating score, and also assist them to filter out movies that would receive negtive reviews. In addition, this project is designed to benefit filmmakers, helping them to understand what are the areas that the audience cares about so that they could pay more attention in those areas while producing films.
+
+<br>
+
+
+
+
+
+## 2. PACKAGES 
+
+R packages used in this project include:
+
+* Tidyverse
+  * dpltr
+  * ggplot2
+* Psych
+* knitr
+
+```{r}
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+
+```
+
+
+
+## 3. DATASETS {.tabset .tabset-fade .tabset-pills}
+
+
+<div style="float: right">
+
+```{r, fig.align='right', echo=FALSE, out.width="150px", out.height="70px"}
+
+knitr::include_graphics("C:/Alice Wei/WFU/MSBA/R/Module 04/imdb.png")
+```
+
+</div>
+
+
+This project utilizes the [**IMDB 5000 Movie Dataset**](https://www.kaggle.com/deepmatrix/imdb-5000-movie-dataset) on [Kaggle](https://www.kaggle.com/). The dataset, in total, contains 5,043 observations and 28 variables. Specifically, data was collected in 2016 from [IMDB](http://www.imdb.com/) website using web crawler. It contains over 5,000 movies in a wide variety of genres from 1916 to 2016.
+
+```{r echo=FALSE, comment=NA,results='asis',null_prefixt=FALSE, warning=FALSE, message=FALSE}
+
+IMDBFilmRaw <- read_csv("C:/Alice Wei/WFU/MSBA/R/Projects/RProjects/Final Project/movie_metadata.csv")
+
+
+```
+<br>
+<br>
+<br>
+<br>
+
+### 3.1 Variables
+
+```{r}
+#Retrieve Data Variables
+Variables <- names(IMDBFilmRaw)
+Variables <- sort(Variables)
+VariableList <- tibble(VarNum = 1:28, VarName = Variables)
+#View(tibble(x =1:28,y = Variables))
+kable(VariableList)
+```
+
+<br>
+
+### 3.2 Raw Dataset
+
+
+```{r comment=NA,results='asis',null_prefixt=TRUE}
+
+kable(head(IMDBFilmRaw, 15),align = 'l')
+
+```
+
+<br>
+
+
+
+
+## 4. DATA PREPARATION {.tabset .tabset-fade .tabset-pills}
+
+```{r warning=FALSE}
+
+#Select and reorder columns
+CleanFilmData <- IMDBFilmRaw[,c(12,26,4,1,24,10,20,9,23,5,6,8,25,28)]
+
+#Remove NA, Sepreate Column and get first element, add new variable)
+FinalFilmData <- CleanFilmData %>% 
+  na.omit() %>% 
+  separate(genres, into = c("Genre_1")) %>%
+  mutate(TotalFacebooklikes = actor_3_facebook_likes + actor_2_facebook_likes +
+           actor_1_facebook_likes + director_facebook_likes + 
+           movie_facebook_likes) %>%
+  mutate(ProfitTurnover = (gross - budget) / budget)
+
+# remove summed columns
+FinalFilmData <- FinalFilmData[,-c(10:14)]
+
+
+```
+
+
+### 4.1 Variables
+
+```{r}
+#Retrieve New Var Names
+FinalVar <- names(FinalFilmData)
+VarType <- lapply(FinalFilmData, typeof)
+FinalVarList <- tibble(Num = 1:11, VarName = FinalVar, Type = VarType)
+kable(FinalVarList)
+```
+
+<br>
+
+### 4.2 Raw Dataset
+
+
+```{r comment=NA,results='asis',null_prefixt=TRUE}
+
+kable(head(FinalFilmData,15))
+
+```
+
+
+
+## 5. METHODOLOGY
+
+In this project, I aim to use several stastical methods to demostrate the relationship. I would like to investigate the distribution of rating score and create histogram to visualize the distribution. Also, I plan to plot box plots and scattered graphs to compare and contrast the data.
+
+To further analyze the relationship and the reliability of the relationship, I would like to run a regression, examing the change of the rating score of a movie when 10 other factors are varied.
+
+* Dependent Variable: **IMDB Rating Score**
+  
+* Independent Variable:
+
+    1. Color - Catagorical (Dummy)
+    2. Duration - Quantitative
+    3. Box Office Profits - Quantitative
+    4. Genres - Catagorical
+    5. Length of Movie Title - Quantitative
+    6. Number of User for reviews - Quantitative
+    7. Language - Catagorical
+    8. Budget - Quantitative
+    9. Title Year - Catagorical
+    10. Number of Movie Facebook Likes - Quantitative
+  
+## 6. DATA ANALYSIS {.tabset .tabset-fade .tabset-pills}
+
+### 6.1 Observations (TOP 10 LISTS)
+
+**6.1.1 Top 10 rating **
+
+```{r}
+
+FinalFilmData %>% arrange(desc(imdb_score)) %>% head(10) %>% kable()
+
+```
+
+**6.1.2 Top 10 Box Office profit**
+
+```{r}
+
+FinalFilmData %>% arrange(desc(gross)) %>% head(10) %>% kable()
+
+```
+
+**6.1.3 Top 10 Profit Turnover**
+
+```{r}
+
+FinalFilmData %>% arrange(desc(ProfitTurnover)) %>% head(10) %>% kable()
+
+```
+
+### 6.2 Summary Statistics
+
+**6.2.1 Basic Summary**
+
+```{r}
+
+# Data Summary
+kable(do.call(cbind, lapply(FinalFilmData, summary)))
+
+
+```
+
+**6.2.2 Distribution**
+
+
+```{r fig.width= 12}
+
+FinalFilmData %>% ggplot(aes(gross)) + geom_histogram()
+FinalFilmData %>% ggplot(aes(budget)) + geom_histogram()
+
+```
+
+**6.2.3 Toic: Genre & Language**
+
+```{r fig.height= 10, fig.width= 12}
+
+FinalFilmData %>% 
+  ggplot(aes(y=imdb_score, x = Genre_1, categoty = color, fill = color)) +
+  geom_boxplot()
+
+```
+
+
+### 6.3 Multiple Linear Regression
+
+**6.3.1 Correlation**
+
+**6.3.2 Significance**
+
+**6.3.3 Relationship**
+
+
+
+
+
+
