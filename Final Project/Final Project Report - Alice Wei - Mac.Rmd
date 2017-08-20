@@ -16,16 +16,16 @@ output:
 # **Elements that Influece Movie Ratings** {.tabset .tabset-fade .tabset-pills}
 
 <div style="float: center">
-<img src="C:/Alice Wei/WFU/MSBA/R/Projects/Rprojects/Final Project/Movie-making4.jpg" height="100" >
+<img src="Movie-making4.jpg" height="100" >
 
 </div>
 ## 1. INTRODUCTION 
 
-<div style="float: left">
-<img src="C:/Alice Wei/WFU/MSBA/R/Module 04/A trip to the Moon.jpg" hspace="20" height="120" width="100" >
+#<div style="float: left">
+#<img src="A trip to the Moon.jpg" hspace="20" height="120" width="100" >
 
 
-</div>
+#</div>
 
 One of the very famous films in early 1900s, [*A Trip to the Moon*](https://www.youtube.com/watch?v=zXgTFBIwDCc), opens the door of the film industry. Tons of young professionals entered the field with their dreams. From silent films to Dolby Surround Sound movies, from the simplest hand-made visual effect to computer-generated images(CGI), movie has exprienced several revolutions, and now becomes one of the most popular entertainment for people. With the blooming of the industry, the qualities of movies become mixed. Before watching the movie, audience could not really know how good it is. In this projects, I would like to use the data found from [kaggle.com](https://www.kaggle.com/) to illustarte the relationship between the rating score of the movie (the measure of the overal favorableness) and other 10 vairables, including year, box office profits, genre, etc.
 
@@ -75,7 +75,7 @@ library(shiny)
 
 ```{r, fig.align='right', echo=FALSE, out.width="150px", out.height="70px"}
 
-knitr::include_graphics("C:/Alice Wei/WFU/MSBA/R/Module 04/imdb.png")
+knitr::include_graphics("imdb.png")
 ```
 
 </div>
@@ -85,7 +85,9 @@ This project utilizes the [**IMDB 5000 Movie Dataset**](https://www.kaggle.com/d
 
 ```{r echo=FALSE, comment=NA,results='asis',null_prefixt=FALSE, warning=FALSE, message=FALSE}
 
-IMDBFilmRaw <- read_csv("C:/Alice Wei/WFU/MSBA/R/Projects/RProjects/Final Project/movie_metadata.csv")
+IMDBFilmRaw <- read_csv("movie_metadata.csv")
+
+
 
 
 ```

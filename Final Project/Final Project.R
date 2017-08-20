@@ -9,9 +9,9 @@ library(nlme)
 library(VIF)
 library(plotly)
 library(base)
-
+library(shiny)
 #Import DataSet
-IMDBFilmRaw <- read_csv("C:/Alice Wei/WFU/MSBA/R/Projects/RProjects/Final Project/movie_metadata.csv")
+IMDBFilmRaw <- read_csv("Final Project/movie_metadata.csv")
 
 #Retrieve Data Variables
 Variables <- names(IMDBFilmRaw)
@@ -44,8 +44,8 @@ FinalFilmData <- CleanFilmData %>%
                                                   ifelse(title_year <= 2000, "Millenium","Boomletes"))))))
 
 
-write_rds(FinalFilmData, "C:/Alice Wei/WFU/MSBA/R/Projects/RProjects/Final Project/FinalFilmData.rds")
-write_csv(FinalFilmData, "C:/Alice Wei/WFU/MSBA/R/Projects/RProjects/Final Project/FinalFilmData.csv")
+#write_rds(FinalFilmData, "C:/Alice Wei/WFU/MSBA/R/Projects/RProjects/Final Project/FinalFilmData.rds")
+#write_csv(FinalFilmData, "C:/Alice Wei/WFU/MSBA/R/Projects/RProjects/Final Project/FinalFilmData.csv")
 # remove summed columns
 FinalFilmData <- FinalFilmData[,-c(7,8,11:15)]
 
